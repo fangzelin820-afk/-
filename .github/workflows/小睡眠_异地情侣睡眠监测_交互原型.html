@@ -1,0 +1,2272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>小睡眠 · 异地情侣睡眠监测 — iOS 交互原型</title>
+<style>
+/* ============================================================
+   小睡眠 × iOS Design System — Design Tokens
+   ============================================================ */
+:root {
+  /* ── 主色调：低饱和蓝（小睡眠品牌色系） ── */
+  --blue-primary: #5B7FFF;
+  --blue-light: #7B9CFF;
+  --blue-soft: #A0B8FF;
+  --blue-dark: #3D5AFE;
+  --blue-glow: rgba(91, 127, 255, 0.35);
+
+  /* ── 辅助色 ── */
+  --warm-orange: #FF9A76;
+  --warm-peach: #FFB79F;
+  --purple-accent: #7C5CFC;
+  --purple-soft: #B39DDB;
+  --green-calm: #4ECB71;
+  --gold: #FFD700;
+  --gold-light: #FFE082;
+
+  /* ── 背景色系（深色模式） ── */
+  --bg-root: #08080F;
+  --bg-primary: #0D0D1A;
+  --bg-secondary: #121225;
+  --bg-elevated: #1A1A32;
+  --bg-card: rgba(255, 255, 255, 0.04);
+  --bg-card-hover: rgba(255, 255, 255, 0.07);
+  --bg-glass: rgba(18, 18, 37, 0.75);
+
+  /* ── 文字色系 ── */
+  --text-primary: #F0F0F5;
+  --text-secondary: #9898A8;
+  --text-tertiary: #5E5E72;
+  --text-quaternary: #3E3E50;
+
+  /* ── 分隔 & 投影 ── */
+  --separator: rgba(255, 255, 255, 0.06);
+  --separator-strong: rgba(255, 255, 255, 0.10);
+  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --shadow-glow-blue: 0 0 30px var(--blue-glow);
+  --shadow-glow-gold: 0 0 25px rgba(255, 215, 0, 0.25);
+
+  /* ── 圆角（iOS 风格） ── */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+  --radius-full: 9999px;
+
+  /* ── 间距（8pt 栅格） ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* ── 动画曲线（iOS spring） ── */
+  --ease-spring: cubic-bezier(0.25, 0.1, 0.25, 1.0);
+  --ease-spring-smooth: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================================
+   Reset & Base
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+               'PingFang SC', 'Helvetica Neue', 'Segoe UI', sans-serif;
+  background: #1a1a2e;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── iPhone 15 Pro Max Frame ── */
+.phone-frame {
+  width: 402px;
+  height: 874px;
+  background: var(--bg-root);
+  border-radius: 48px;
+  overflow: hidden;
+  position: relative;
+  box-shadow:
+    0 0 0 3px #1c1c2e,
+    0 0 0 6px #252540,
+    0 20px 60px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Dynamic Island ── */
+.dynamic-island {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 126px;
+  height: 34px;
+  background: #000;
+  border-radius: 20px;
+  z-index: 1000;
+  transition: all 0.4s var(--ease-spring);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dynamic-island.expanded {
+  width: 180px;
+  height: 38px;
+  border-radius: 22px;
+}
+.dynamic-island .di-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green-calm);
+  margin: 0 3px;
+  animation: di-pulse 1.5s ease-in-out infinite;
+}
+.dynamic-island .di-dot:nth-child(2) { animation-delay: 0.2s; }
+.dynamic-island .di-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes di-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.8); }
+}
+
+/* ── Status Bar ── */
+.status-bar {
+  height: 54px;
+  padding: 14px 32px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  z-index: 50;
+}
+.status-bar .sb-time {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.3px;
+  width: 60px;
+}
+.status-bar .sb-icons {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+.status-bar .sb-icons svg {
+  width: 16px;
+  height: 16px;
+  fill: var(--text-primary);
+}
+
+/* ── Navigation Header ── */
+.nav-header {
+  padding: 8px 20px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  min-height: 44px;
+}
+.nav-back {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: none; color: var(--text-primary);
+  font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+.nav-back:active { background: var(--bg-card-hover); transform: scale(0.92); }
+.nav-title {
+  font-size: 17px; font-weight: 600; color: var(--text-primary);
+  letter-spacing: -0.2px;
+}
+.nav-title-lg {
+  font-size: 32px; font-weight: 700; color: var(--text-primary);
+  letter-spacing: -0.5px;
+  padding: 8px 20px 2px;
+}
+.nav-action {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: none; color: var(--text-secondary);
+  font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+.nav-action:active { background: var(--bg-card-hover); }
+
+/* ── Scrollable Content ── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+.content::-webkit-scrollbar { width: 0; }
+
+/* ── Page System ── */
+.page {
+  display: none;
+  flex-direction: column;
+  padding: 0 20px 24px;
+  animation: pageFadeIn 0.35s var(--ease-out-expo);
+}
+.page.active { display: flex; }
+
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   Tab Bar (iOS Style)
+   ============================================================ */
+.tab-bar {
+  height: 84px;
+  padding: 6px 8px 28px;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  background: rgba(8, 8, 15, 0.85);
+  border-top: 0.5px solid var(--separator);
+  flex-shrink: 0;
+  -webkit-backdrop-filter: blur(40px);
+  backdrop-filter: blur(40px);
+}
+.tab-item {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; border: none; background: none; padding: 4px 14px;
+  color: var(--text-tertiary); font-size: 10px; font-weight: 500;
+  transition: all 0.2s var(--ease-spring);
+  letter-spacing: 0.1px;
+  position: relative;
+}
+.tab-item .tab-icon-wrap {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  transition: all 0.25s var(--ease-spring-smooth);
+}
+.tab-item.active {
+  color: var(--blue-light);
+}
+.tab-item.active .tab-icon-wrap {
+  transform: translateY(-2px);
+}
+.tab-item::before {
+  content: '';
+  position: absolute; top: -7px;
+  width: 20px; height: 3px;
+  background: var(--blue-light);
+  border-radius: 0 0 3px 3px;
+  opacity: 0; transition: opacity 0.25s;
+}
+.tab-item.active::before { opacity: 1; }
+
+/* ============================================================
+   Card Components
+   ============================================================ */
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 0.5px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.25s var(--ease-spring);
+  position: relative;
+  overflow: hidden;
+}
+.card:active { transform: scale(0.985); background: var(--bg-card-hover); }
+.card-tappable { cursor: pointer; }
+
+.card-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 14px;
+}
+.card-title {
+  font-size: 14px; font-weight: 600; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.card-subtitle {
+  font-size: 12px; color: var(--text-tertiary);
+}
+
+/* Glass card — more translucent */
+.card-glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ============================================================
+   Buttons (iOS Style)
+   ============================================================ */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px 24px;
+  border-radius: var(--radius-full);
+  border: none;
+  font-size: 16px; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s var(--ease-spring);
+  letter-spacing: -0.2px;
+  position: relative;
+  overflow: hidden;
+}
+.btn:active { transform: scale(0.96); }
+.btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%),
+              rgba(255,255,255,0.2) 0%, transparent 60%);
+  opacity: 0; transition: opacity 0.3s;
+}
+.btn.ripple::after { opacity: 1; }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--blue-primary), var(--blue-dark));
+  color: #fff;
+  box-shadow: 0 4px 20px var(--blue-glow);
+  width: 100%;
+}
+.btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 0.5px solid var(--separator-strong);
+  width: 100%;
+}
+.btn-warm {
+  background: linear-gradient(135deg, rgba(255,154,118,0.25), rgba(255,154,118,0.12));
+  color: var(--warm-orange);
+  border: 0.5px solid rgba(255,154,118,0.2);
+}
+.btn-gold {
+  background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,215,0,0.08));
+  color: var(--gold);
+  border: 0.5px solid rgba(255,215,0,0.25);
+}
+
+.btn-sm { padding: 8px 16px; font-size: 13px; }
+.btn-icon {
+  width: 40px; height: 40px; padding: 0; border-radius: 50%;
+  background: var(--bg-card);
+  border: 0.5px solid var(--separator-strong);
+  color: var(--text-primary);
+  font-size: 18px;
+}
+
+/* ============================================================
+   Moon Sync — Core Visualization
+   ============================================================ */
+.moon-sync-container {
+  position: relative;
+  background: var(--bg-card);
+  border-radius: var(--radius-2xl);
+  padding: 32px 20px 28px;
+  overflow: hidden;
+  border: 0.5px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 16px;
+}
+
+/* Animated sky gradient */
+.sky-bg {
+  position: absolute; inset: 0;
+  transition: background 1.5s ease-in-out;
+  pointer-events: none;
+}
+.sky-bg.state-online {
+  background: radial-gradient(ellipse at 50% 20%, rgba(91,127,255,0.18) 0%, transparent 60%),
+              radial-gradient(ellipse at 50% 80%, rgba(124,92,252,0.08) 0%, transparent 50%);
+}
+.sky-bg.state-partner-sleep {
+  background: radial-gradient(ellipse at 50% 20%, rgba(253,203,110,0.2) 0%, transparent 55%),
+              radial-gradient(ellipse at 50% 80%, rgba(91,127,255,0.1) 0%, transparent 50%);
+}
+.sky-bg.state-both-sleep {
+  background: radial-gradient(ellipse at 50% 30%, rgba(253,203,110,0.25) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 70%, rgba(255,154,118,0.12) 0%, transparent 50%),
+              radial-gradient(ellipse at 30% 50%, rgba(124,92,252,0.08) 0%, transparent 40%);
+}
+.sky-bg.state-morning {
+  background: radial-gradient(ellipse at 50% 30%, rgba(255,179,71,0.3) 0%, transparent 50%),
+              radial-gradient(ellipse at 50% 100%, rgba(255,154,118,0.25) 0%, transparent 45%),
+              radial-gradient(ellipse at 30% 40%, rgba(255,215,0,0.15) 0%, transparent 40%);
+}
+
+/* Stars */
+.stars-layer {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 1;
+}
+.star-particle {
+  position: absolute;
+  background: #fff;
+  border-radius: 50%;
+  animation: star-twinkle var(--twinkle-dur) ease-in-out infinite;
+  animation-delay: var(--twinkle-delay);
+}
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.8); }
+}
+
+/* Shooting star */
+.shooting-star {
+  position: absolute;
+  width: 80px; height: 1.5px;
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.9), rgba(255,255,255,0));
+  border-radius: 2px;
+  animation: shoot 3s ease-in infinite;
+  animation-delay: var(--shoot-delay);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+@keyframes shoot {
+  0% { opacity: 0; transform: translate(0, 0) rotate(-25deg); }
+  5% { opacity: 1; }
+  15% { opacity: 0; transform: translate(-200px, 100px) rotate(-25deg); }
+  100% { opacity: 0; transform: translate(-200px, 100px) rotate(-25deg); }
+}
+
+/* Moon pair */
+.moon-pair {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  margin: 8px 0 20px;
+  position: relative;
+  z-index: 3;
+}
+
+.moon-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform 0.3s var(--ease-spring-smooth);
+}
+.moon-unit:active { transform: scale(0.93); }
+
+.moon-orb {
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  position: relative;
+  transition: all 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex; align-items: center; justify-content: center;
+}
+/* Crescent (online/awake) */
+.moon-orb.crescent {
+  background: radial-gradient(circle at 40% 40%, #A0B8FF, #5B7FFF, #3D5AFE);
+  box-shadow:
+    0 0 35px rgba(91,127,255,0.5),
+    0 0 70px rgba(91,127,255,0.25),
+    inset 0 -4px 8px rgba(0,0,0,0.2);
+}
+/* Full moon (asleep) */
+.moon-orb.full {
+  background: radial-gradient(circle at 35% 30%, #FFEAA7, #FDCB6E 40%, #E8A840 80%, #C78520);
+  box-shadow:
+    0 0 50px rgba(253,203,110,0.55),
+    0 0 100px rgba(253,203,110,0.3),
+    0 0 150px rgba(255,179,71,0.15),
+    inset 0 -3px 6px rgba(0,0,0,0.15);
+  animation: full-moon-glow 3s ease-in-out infinite;
+}
+@keyframes full-moon-glow {
+  0%, 100% { box-shadow: 0 0 50px rgba(253,203,110,0.55), 0 0 100px rgba(253,203,110,0.3), 0 0 150px rgba(255,179,71,0.15); }
+  50% { box-shadow: 0 0 65px rgba(253,203,110,0.7), 0 0 130px rgba(253,203,110,0.4), 0 0 180px rgba(255,179,71,0.25); }
+}
+/* New moon (deep sleep) */
+.moon-orb.new {
+  background: radial-gradient(circle at 35% 30%, #3A3A5C, #252545 50%, #15152A);
+  box-shadow: 0 0 20px rgba(45,43,85,0.4), 0 0 50px rgba(45,43,85,0.2);
+}
+/* Sun (woke up) */
+.moon-orb.sunrise {
+  background: radial-gradient(circle at 35% 30%, #FFF7D6, #FFB347 45%, #FF8C00 75%, #E06900);
+  box-shadow:
+    0 0 65px rgba(255,179,71,0.6),
+    0 0 120px rgba(255,140,0,0.35),
+    0 0 180px rgba(255,140,0,0.15);
+  animation: sunrise-pulse 4s ease-in-out infinite;
+}
+@keyframes sunrise-pulse {
+  0%, 100% { box-shadow: 0 0 65px rgba(255,179,71,0.6), 0 0 120px rgba(255,140,0,0.35), 0 0 180px rgba(255,140,0,0.15); }
+  50% { box-shadow: 0 0 80px rgba(255,179,71,0.75), 0 0 150px rgba(255,140,0,0.5), 0 0 210px rgba(255,140,0,0.25); }
+}
+/* Clouded (offline) */
+.moon-orb.clouded {
+  background: radial-gradient(circle at 40% 40%, #5A5A70, #3A3A50, #222238);
+  box-shadow: 0 0 15px rgba(100,100,130,0.25);
+}
+
+.moon-orb-icon {
+  font-size: 36px;
+  transition: all 0.8s ease;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.moon-label {
+  font-size: 14px; font-weight: 600; color: var(--text-primary);
+  letter-spacing: -0.1px;
+}
+.moon-status-badge {
+  font-size: 11px; font-weight: 500; color: var(--text-secondary);
+  padding: 4px 12px;
+  background: rgba(255,255,255,0.05);
+  border-radius: var(--radius-full);
+  letter-spacing: 0.2px;
+}
+
+/* Connection line between moons */
+.connection-line {
+  width: 36px; height: 1.5px;
+  background: linear-gradient(90deg,
+    rgba(91,127,255,0.1), rgba(255,154,118,0.5), rgba(91,127,255,0.1));
+  border-radius: 2px;
+  position: relative;
+}
+.connection-line::after {
+  content: ''; position: absolute; inset: -4px -4px;
+  background: radial-gradient(ellipse at center, rgba(255,154,118,0.2), transparent 70%);
+  border-radius: 50%;
+  animation: connection-glow 2s ease-in-out infinite;
+}
+@keyframes connection-glow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.8; }
+}
+
+/* Co-sleep badge */
+.co-sleep-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 18px;
+  background: rgba(255,215,0,0.08);
+  border: 0.5px solid rgba(255,215,0,0.2);
+  border-radius: var(--radius-full);
+  font-size: 13px; font-weight: 500; color: var(--gold-light);
+  position: relative; z-index: 3;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* ============================================================
+   Sleep Stage Bars
+   ============================================================ */
+.sleep-score-display {
+  font-size: 36px; font-weight: 700;
+  background: linear-gradient(135deg, var(--blue-light), var(--warm-peach));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.stage-list { display: flex; flex-direction: column; gap: 6px; margin: 12px 0; }
+.stage-row { display: flex; align-items: center; gap: 10px; }
+.stage-label { font-size: 11px; color: var(--text-tertiary); width: 28px; text-align: right; font-weight: 500; }
+.stage-track {
+  flex: 1; height: 6px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 3px; overflow: hidden;
+}
+.stage-fill {
+  height: 100%; border-radius: 3px;
+  transition: width 1s var(--ease-out-expo);
+}
+.stage-fill.deep { background: linear-gradient(90deg, #3D5AFE, #536DFE); }
+.stage-fill.light { background: linear-gradient(90deg, #7C9AFF, #A0B8FF); }
+.stage-fill.rem { background: linear-gradient(90deg, #B388FF, #D1C4E9); }
+.stage-fill.awake { background: linear-gradient(90deg, #FF9A76, #FFB79F); }
+.stage-val { font-size: 11px; color: var(--text-secondary); width: 42px; text-align: left; font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   Quick Action Buttons
+   ============================================================ */
+.quick-actions {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+.quick-btn {
+  padding: 18px 16px;
+  border-radius: var(--radius-md);
+  border: none;
+  font-size: 15px; font-weight: 600;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all 0.25s var(--ease-spring);
+  color: #fff;
+  letter-spacing: -0.1px;
+}
+.quick-btn:active { transform: scale(0.94); }
+.quick-btn.goodnight {
+  background: linear-gradient(135deg, #252545, #302D58);
+  border: 0.5px solid rgba(91,127,255,0.25);
+}
+.quick-btn.goodmorning {
+  background: linear-gradient(135deg, #302820, #3D3228);
+  border: 0.5px solid rgba(255,154,118,0.25);
+}
+
+/* ============================================================
+   Action Menu Items (iOS Table Style)
+   ============================================================ */
+.action-group { display: flex; flex-direction: column; }
+.action-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 15px 16px;
+  background: var(--bg-card);
+  border-bottom: 0.5px solid var(--separator);
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-primary); font-size: 15px; font-weight: 400;
+}
+.action-row:first-child { border-radius: var(--radius-md) var(--radius-md) 0 0; }
+.action-row:last-child { border-radius: 0 0 var(--radius-md) var(--radius-md); border-bottom: none; }
+.action-row:only-child { border-radius: var(--radius-md); }
+.action-row:active { background: var(--bg-card-hover); }
+.action-row .action-icon-wrap {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.action-row .action-chevron {
+  margin-left: auto; color: var(--text-tertiary); font-size: 14px;
+}
+.action-badge {
+  margin-left: auto; margin-right: 4px;
+  font-size: 12px; color: var(--text-secondary);
+  padding: 2px 8px; background: rgba(255,255,255,0.04); border-radius: var(--radius-full);
+}
+
+/* ============================================================
+   iOS Sheet Modal
+   ============================================================ */
+.sheet-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: none;
+  align-items: flex-end;
+  z-index: 200;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.sheet-overlay.show { display: flex; opacity: 1; }
+.sheet-panel {
+  width: 100%;
+  max-height: 80%;
+  background: #1A1A32;
+  border-radius: 22px 22px 0 0;
+  padding: 8px 20px 34px;
+  animation: sheetUp 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  overflow-y: auto;
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.5);
+}
+@keyframes sheetUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.sheet-handle {
+  width: 36px; height: 5px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 3px;
+  margin: 8px auto 20px;
+}
+.sheet-title {
+  font-size: 18px; font-weight: 600; color: var(--text-primary);
+  text-align: center; margin-bottom: 20px;
+}
+
+/* Emoji picker grid */
+.emoji-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 10px; margin-bottom: 16px;
+}
+.emoji-option {
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  border: 1.5px solid transparent;
+  background: rgba(255,255,255,0.04);
+  font-size: 28px; cursor: pointer;
+  transition: all 0.2s var(--ease-spring-smooth);
+  display: flex; align-items: center; justify-content: center;
+}
+.emoji-option:active, .emoji-option.selected {
+  border-color: var(--blue-light);
+  background: rgba(91,127,255,0.12);
+  transform: scale(1.08);
+}
+
+/* Sheet text input */
+.sheet-input {
+  width: 100%; padding: 12px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-md);
+  color: var(--text-primary); font-size: 15px; outline: none;
+  margin-bottom: 16px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+.sheet-input:focus { border-color: var(--blue-light); }
+.sheet-input::placeholder { color: var(--text-tertiary); }
+
+/* ============================================================
+   Toast / Notification
+   ============================================================ */
+.toast {
+  position: absolute; top: 90px; left: 50%; transform: translateX(-50%);
+  padding: 12px 22px;
+  background: rgba(28, 28, 48, 0.95);
+  border-radius: var(--radius-full);
+  color: var(--text-primary); font-size: 13px; font-weight: 500;
+  z-index: 300; pointer-events: none;
+  opacity: 0; transition: all 0.35s var(--ease-spring);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 0.5px solid rgba(255,255,255,0.1);
+  box-shadow: var(--shadow-elevated);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+
+.notif-banner {
+  position: absolute; top: 62px; left: 16px; right: 16px;
+  padding: 14px 16px;
+  background: rgba(28, 28, 48, 0.95);
+  border-radius: var(--radius-md);
+  border: 0.5px solid rgba(91,127,255,0.25);
+  z-index: 180;
+  display: none;
+  align-items: center; gap: 12px;
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  box-shadow: var(--shadow-elevated);
+  animation: notifSlide 0.45s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.notif-banner.show { display: flex; }
+@keyframes notifSlide {
+  from { transform: translateY(-24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.notif-icon { font-size: 26px; flex-shrink: 0; }
+.notif-body { flex: 1; }
+.notif-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.notif-desc { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+.notif-dismiss {
+  background: none; border: none; color: var(--text-tertiary);
+  font-size: 16px; cursor: pointer; padding: 4px;
+}
+
+/* ============================================================
+   Home Page — White Noise Cards
+   ============================================================ */
+.wn-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.wn-card {
+  aspect-ratio: 1;
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.3s var(--ease-spring);
+  position: relative; overflow: hidden;
+  border: 0.5px solid rgba(255,255,255,0.06);
+}
+.wn-card:active { transform: scale(0.95); }
+.wn-card .wn-bg {
+  position: absolute; inset: 0;
+  transition: transform 0.4s var(--ease-out-expo);
+}
+.wn-card:active .wn-bg { transform: scale(1.08); }
+.wn-card .wn-icon { font-size: 36px; position: relative; z-index: 1; }
+.wn-card .wn-info { position: relative; z-index: 1; }
+.wn-card .wn-name { font-size: 15px; font-weight: 600; color: #fff; }
+.wn-card .wn-dur { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 2px; }
+
+.wn-rain { background: linear-gradient(160deg, #1a3060, #0f1a38); }
+.wn-ocean { background: linear-gradient(160deg, #0d3b4e, #08212e); }
+.wn-forest { background: linear-gradient(160deg, #1a3d28, #0d2217); }
+.wn-fire { background: linear-gradient(160deg, #4a2a18, #2a1508); }
+
+/* ============================================================
+   Home Header with Cat Mascot
+   ============================================================ */
+.home-header {
+  display: flex; align-items: center; gap: 14px;
+  padding: 4px 0 18px;
+}
+.cat-mascot {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fff, #e8e8f0);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  box-shadow: 0 4px 16px rgba(255,255,255,0.1);
+  position: relative;
+  animation: cat-breathe 4s ease-in-out infinite;
+}
+@keyframes cat-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+.cat-mascot::after {
+  content: '💤'; position: absolute;
+  font-size: 14px; top: -4px; right: -4px;
+  animation: zzz-float 2s ease-in-out infinite;
+}
+@keyframes zzz-float {
+  0%, 100% { transform: translateY(0); opacity: 0.8; }
+  50% { transform: translateY(-6px); opacity: 1; }
+}
+.greeting-text {
+  font-size: 22px; font-weight: 700; color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+.greeting-sub {
+  font-size: 13px; color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ============================================================
+   Letters Inbox
+   ============================================================ */
+.letter-cell {
+  display: flex; gap: 14px; padding: 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 0.5px solid rgba(255,255,255,0.04);
+  align-items: center;
+}
+.letter-cell:active { background: var(--bg-card-hover); transform: scale(0.985); }
+.letter-cell.unread { border-left: 3px solid var(--blue-light); }
+.letter-cell .l-env { font-size: 32px; flex-shrink: 0; }
+.letter-cell .l-info { flex: 1; min-width: 0; }
+.letter-cell .l-from { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.letter-cell .l-preview {
+  font-size: 12px; color: var(--text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-top: 2px;
+}
+.letter-cell .l-time { font-size: 11px; color: var(--text-tertiary); flex-shrink: 0; }
+.letter-cell .l-badge {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--blue-light);
+  flex-shrink: 0; margin-left: 4px;
+}
+
+/* ============================================================
+   Settings Page (iOS style)
+   ============================================================ */
+.settings-section { margin-bottom: 24px; }
+.settings-section-title {
+  font-size: 12px; font-weight: 600; color: var(--text-tertiary);
+  text-transform: uppercase;
+  padding: 0 16px 6px; letter-spacing: 0.5px;
+}
+.setting-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border-bottom: 0.5px solid var(--separator);
+  cursor: pointer; transition: background 0.2s;
+}
+.setting-row:first-child { border-radius: var(--radius-md) var(--radius-md) 0 0; }
+.setting-row:last-child { border-radius: 0 0 var(--radius-md) var(--radius-md); border-bottom: none; }
+.setting-row:only-child { border-radius: var(--radius-md); }
+.setting-row:active { background: var(--bg-card-hover); }
+.setting-label { flex: 1; font-size: 15px; color: var(--text-primary); }
+.setting-value { font-size: 14px; color: var(--text-secondary); }
+.setting-chevron { color: var(--text-tertiary); font-size: 14px; }
+
+/* iOS Toggle Switch */
+.ios-toggle {
+  width: 48px; height: 28px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 14px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.25s var(--ease-out-expo);
+  flex-shrink: 0;
+}
+.ios-toggle.on { background: var(--green-calm); }
+.ios-toggle::after {
+  content: '';
+  width: 24px; height: 24px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute; top: 2px; left: 2px;
+  transition: transform 0.25s var(--ease-spring-smooth);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.ios-toggle.on::after { transform: translateX(20px); }
+
+/* Privacy level selector */
+.privacy-levels {
+  display: flex; gap: 6px;
+}
+.privacy-lvl {
+  flex: 1; padding: 10px 4px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  text-align: center;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.2s;
+  font-size: 12px; color: var(--text-secondary);
+}
+.privacy-lvl.active {
+  border-color: var(--blue-light);
+  background: rgba(91,127,255,0.1);
+  color: var(--blue-light);
+}
+.privacy-lvl .lvl-icon { font-size: 22px; display: block; margin-bottom: 2px; }
+
+/* ============================================================
+   Invite Code
+   ============================================================ */
+.code-display {
+  display: flex; justify-content: center; gap: 8px; margin: 20px 0;
+}
+.code-digit-display {
+  width: 44px; height: 54px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; font-weight: 700; color: var(--blue-light);
+  letter-spacing: 1px;
+  font-variant-numeric: tabular-nums;
+}
+.code-input-group {
+  display: flex; justify-content: center; gap: 8px; margin: 16px 0;
+}
+.code-input-digit {
+  width: 44px; height: 54px;
+  background: rgba(255,255,255,0.04);
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius-sm);
+  text-align: center;
+  font-size: 22px; font-weight: 700; color: var(--text-primary);
+  outline: none; transition: border-color 0.2s;
+  font-family: inherit;
+}
+.code-input-digit:focus { border-color: var(--blue-light); }
+
+/* ============================================================
+   Segmented Control (iOS)
+   ============================================================ */
+.segmented {
+  display: flex; background: rgba(255,255,255,0.05);
+  border-radius: var(--radius-full); padding: 3px;
+  margin-bottom: 16px;
+}
+.segmented-option {
+  flex: 1; padding: 8px 14px;
+  border-radius: var(--radius-full); border: none;
+  background: transparent; color: var(--text-secondary);
+  font-size: 13px; font-weight: 500; cursor: pointer;
+  transition: all 0.25s var(--ease-spring);
+}
+.segmented-option.active {
+  background: rgba(255,255,255,0.1);
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* ============================================================
+   Match Circle
+   ============================================================ */
+.match-ring {
+  width: 150px; height: 150px;
+  border-radius: 50%;
+  margin: 0 auto 20px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  position: relative;
+}
+.match-ring::before {
+  content: ''; position: absolute; inset: -8px;
+  border-radius: 50%;
+  border: 5px solid transparent;
+  border-top-color: var(--blue-light);
+  border-right-color: var(--warm-orange);
+  animation: match-spin 8s linear infinite;
+}
+@keyframes match-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.match-ring-inner {
+  width: 130px; height: 130px;
+  border-radius: 50%;
+  background: rgba(91,127,255,0.08);
+  border: 2px solid rgba(91,127,255,0.2);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  animation: match-soft-pulse 3s ease-in-out infinite;
+}
+@keyframes match-soft-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(91,127,255,0.2); }
+  50% { box-shadow: 0 0 40px rgba(91,127,255,0.4); }
+}
+.match-number {
+  font-size: 44px; font-weight: 800; color: var(--text-primary);
+  letter-spacing: -2px;
+}
+.match-unit { font-size: 18px; font-weight: 600; color: var(--text-secondary); }
+
+/* ============================================================
+   Mini Player Bar
+   ============================================================ */
+.mini-player {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius-full);
+  border: 0.5px solid rgba(255,255,255,0.06);
+  cursor: pointer; transition: all 0.2s;
+  margin-bottom: 16px;
+}
+.mini-player:active { background: var(--bg-card-hover); }
+.mini-player .mp-wave {
+  display: flex; gap: 2px; align-items: flex-end; height: 20px;
+}
+.mp-wave .mp-bar {
+  width: 3px; border-radius: 2px;
+  background: var(--blue-light);
+  animation: wave 0.8s ease-in-out infinite;
+}
+.mp-bar:nth-child(1) { height: 10px; animation-delay: 0s; }
+.mp-bar:nth-child(2) { height: 18px; animation-delay: 0.15s; }
+.mp-bar:nth-child(3) { height: 8px; animation-delay: 0.3s; }
+.mp-bar:nth-child(4) { height: 14px; animation-delay: 0.45s; }
+@keyframes wave {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.4); }
+}
+.mini-player .mp-text { flex: 1; font-size: 13px; color: var(--text-primary); font-weight: 500; }
+.mini-player .mp-btn { font-size: 20px; flex-shrink: 0; }
+
+/* ============================================================
+   State Demo Panel (floating)
+   ============================================================ */
+.state-fab {
+  position: absolute; top: 62px; right: 12px;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  border: 0.5px solid rgba(255,255,255,0.12);
+  color: var(--text-secondary);
+  font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 290;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: all 0.2s;
+}
+.state-fab:active { background: rgba(255,255,255,0.12); }
+.state-menu {
+  position: absolute; top: 108px; right: 12px;
+  background: rgba(24, 24, 44, 0.96);
+  border-radius: var(--radius-md);
+  border: 0.5px solid rgba(255,255,255,0.1);
+  padding: 6px;
+  display: none; flex-direction: column; gap: 2px;
+  min-width: 175px;
+  z-index: 295;
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  box-shadow: var(--shadow-elevated);
+}
+.state-menu.show { display: flex; }
+.state-menu-option {
+  padding: 10px 14px;
+  border: none; background: transparent;
+  color: var(--text-primary); font-size: 13px;
+  text-align: left; cursor: pointer;
+  border-radius: 8px; transition: background 0.15s;
+  white-space: nowrap;
+  display: flex; align-items: center; gap: 8px;
+}
+.state-menu-option:hover { background: rgba(255,255,255,0.06); }
+.state-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%; flex-shrink: 0;
+}
+.state-dot.online { background: #4CAF50; }
+.state-dot.sleep { background: #7C9AFF; }
+.state-dot.wake { background: #FF9A76; }
+.state-dot.offline { background: #888; }
+
+/* ============================================================
+   Misc utilities
+   ============================================================ */
+.gap-8 { gap: 8px; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.mt-8 { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mt-20 { margin-top: 20px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-16 { margin-bottom: 16px; }
+.section-label {
+  font-size: 12px; font-weight: 600; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  padding: 0 2px 8px;
+}
+.badge-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px;
+  padding: 0 6px;
+  background: var(--blue-primary);
+  color: #fff; font-size: 11px; font-weight: 600;
+  border-radius: 10px; margin-left: 6px;
+}
+.text-center { text-align: center; }
+.flex-col { display: flex; flex-direction: column; }
+
+/* Confetti / heart burst */
+.heart-particle {
+  position: absolute; pointer-events: none; z-index: 250;
+  font-size: 20px;
+  animation: heart-float 1.2s ease-out forwards;
+}
+@keyframes heart-float {
+  0% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0; transform: translate(var(--hx), var(--hy)) scale(0.3); }
+}
+
+/* Ripple */
+.ripple-effect {
+  position: absolute; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  transform: scale(0);
+  animation: ripple 0.6s ease-out;
+  pointer-events: none;
+}
+@keyframes ripple {
+  to { transform: scale(4); opacity: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="phone-frame" id="app">
+
+  <!-- Dynamic Island -->
+  <div class="dynamic-island" id="dynamicIsland">
+    <div class="di-dot"></div><div class="di-dot"></div><div class="di-dot"></div>
+  </div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span class="sb-time" id="statusTime">9:41</span>
+    <div class="sb-icons">
+      <svg viewBox="0 0 16 12"><rect x="0" y="8" width="2.5" height="4" rx="0.5" fill="white"/><rect x="4" y="6" width="2.5" height="6" rx="0.5" fill="white"/><rect x="8" y="3" width="2.5" height="9" rx="0.5" fill="white"/><rect x="12" y="0" width="2.5" height="12" rx="0.5" fill="white"/></svg>
+      <span style="font-size:12px;">5G</span>
+      <svg viewBox="0 0 28 14" width="22" height="12"><rect x="0" y="0" width="22" height="12" rx="3" fill="none" stroke="white" stroke-width="1.2"/><rect x="3" y="2.5" width="16" height="7" rx="1.5" fill="white"/><rect x="24" y="3.5" width="3" height="7" rx="1.5" fill="white"/></svg>
+    </div>
+  </div>
+
+  <!-- State Demo Toggle -->
+  <button class="state-fab" id="stateFab" onclick="toggleStateMenu()" title="演示场景">🎬</button>
+  <div class="state-menu" id="stateMenu">
+    <button class="state-menu-option" onclick="setDemoState('both_online')"><span class="state-dot online"></span>双方在线 · 睡前</button>
+    <button class="state-menu-option" onclick="setDemoState('partner_sleep')"><span class="state-dot sleep"></span>TA已入睡</button>
+    <button class="state-menu-option" onclick="setDemoState('both_sleep')"><span class="state-dot sleep"></span>双方共眠中</button>
+    <button class="state-menu-option" onclick="setDemoState('partner_wake')"><span class="state-dot wake"></span>TA刚醒来 · 早安</button>
+    <button class="state-menu-option" onclick="setDemoState('partner_offline')"><span class="state-dot offline"></span>TA离线</button>
+    <button class="state-menu-option" onclick="setDemoState('show_notif')"><span class="state-dot sleep"></span>📬 收到推送通知</button>
+    <button class="state-menu-option" onclick="setDemoState('show_envelope')"><span class="state-dot online"></span>💌 收到睡眠信笺</button>
+  </div>
+
+  <!-- Notification Banner -->
+  <div class="notif-banner" id="notifBanner">
+    <span class="notif-icon" id="notifIcon">🌙</span>
+    <div class="notif-body">
+      <div class="notif-title" id="notifTitle">TA已入睡</div>
+      <div class="notif-desc" id="notifDesc">你的TA已经进入梦乡了</div>
+    </div>
+    <button class="notif-dismiss" onclick="hideNotif()">✕</button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ============================================================
+       Content Area
+       ============================================================ -->
+  <div class="content" id="contentArea">
+
+    <!-- ── PAGE 0: 共眠空间 (Together Space) ── -->
+    <div class="page active" id="page-together">
+      <!-- Moon Sync Core -->
+      <div class="moon-sync-container" id="moonSyncBox">
+        <div class="sky-bg state-online" id="skyBg"></div>
+        <div class="stars-layer" id="starsLayer"></div>
+        <div class="shooting-star" style="top:15%;left:70%;--shoot-delay:4s;"></div>
+        <div class="shooting-star" style="top:25%;left:80%;--shoot-delay:9s;"></div>
+
+        <div class="text-center" style="position:relative;z-index:3;">
+          <div style="font-size:12px;color:var(--text-tertiary);text-transform:uppercase;letter-spacing:1px;" id="timeGreeting">夜深了 · 22:47</div>
+        </div>
+
+        <div class="moon-pair">
+          <!-- Partner Moon -->
+          <div class="moon-unit" onclick="onTapPartnerMoon()">
+            <div class="moon-orb crescent" id="moonPartner">
+              <span class="moon-orb-icon" id="moonPartnerIcon">🌙</span>
+            </div>
+            <span class="moon-label" id="moonPartnerName">小鹿 🦌</span>
+            <span class="moon-status-badge" id="partnerStatusBadge">还在线</span>
+          </div>
+
+          <div class="connection-line"></div>
+
+          <!-- Self Moon -->
+          <div class="moon-unit">
+            <div class="moon-orb crescent" id="moonSelf">
+              <span class="moon-orb-icon" id="moonSelfIcon">🌙</span>
+            </div>
+            <span class="moon-label">我</span>
+            <span class="moon-status-badge" id="selfStatusBadge">还在线</span>
+          </div>
+        </div>
+
+        <div class="co-sleep-badge" id="coSleepBadge" style="margin:0 auto;display:flex;width:fit-content;">✨ 共眠 186 天</div>
+      </div>
+
+      <!-- TA's Sleep Card -->
+      <div class="card mb-16" id="sleepCard">
+        <div class="card-header">
+          <span class="card-title">TA 昨晚的睡眠</span>
+          <span class="sleep-score-display" id="sleepScore">87<span style="font-size:16px;"> 分</span></span>
+        </div>
+        <div class="stage-list">
+          <div class="stage-row">
+            <span class="stage-label">深睡</span>
+            <div class="stage-track"><div class="stage-fill deep" style="width:41%"></div></div>
+            <span class="stage-val">3h 12m</span>
+          </div>
+          <div class="stage-row">
+            <span class="stage-label">浅睡</span>
+            <div class="stage-track"><div class="stage-fill light" style="width:64%"></div></div>
+            <span class="stage-val">5h 05m</span>
+          </div>
+          <div class="stage-row">
+            <span class="stage-label">REM</span>
+            <div class="stage-track"><div class="stage-fill rem" style="width:22%"></div></div>
+            <span class="stage-val">1h 42m</span>
+          </div>
+          <div class="stage-row">
+            <span class="stage-label">清醒</span>
+            <div class="stage-track"><div class="stage-fill awake" style="width:4%"></div></div>
+            <span class="stage-val">18m</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-tertiary);margin-bottom:10px;">
+          <span>🌙 入睡 23:15</span><span style="flex:1;height:1px;background:var(--separator);"></span><span>☀️ 醒来 07:30</span>
+        </div>
+        <div style="display:flex;gap:16px;font-size:11px;color:var(--text-tertiary);">
+          <span>😴 鼾声 · 轻度 2次</span><span>💬 梦话 · 无</span>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions mb-16">
+        <button class="quick-btn goodnight" onclick="openSheet('goodnight')">💤 晚安</button>
+        <button class="quick-btn goodmorning" onclick="openSheet('goodmorning')">☀️ 早安</button>
+      </div>
+
+      <!-- Recent Interactions -->
+      <div class="card mb-16">
+        <div class="section-label">💌 最近互动</div>
+        <div class="flex-col" id="timelineList">
+          <div style="display:flex;gap:12px;padding:12px 0;border-bottom:0.5px solid var(--separator);align-items:center;">
+            <span style="font-size:24px;">💌</span>
+            <div style="flex:1;"><div style="font-size:13px;color:var(--text-primary);">TA 给你留了晚安信笺</div><div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">昨晚 23:05</div></div>
+          </div>
+          <div style="display:flex;gap:12px;padding:12px 0;border-bottom:0.5px solid var(--separator);align-items:center;">
+            <span style="font-size:24px;">🎵</span>
+            <div style="flex:1;"><div style="font-size:13px;color:var(--text-primary);">一起听了「雨声」白噪音</div><div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">昨晚 22:45</div></div>
+          </div>
+          <div style="display:flex;gap:12px;padding:12px 0;align-items:center;">
+            <span style="font-size:24px;">☀️</span>
+            <div style="flex:1;"><div style="font-size:13px;color:var(--text-primary);">TA 向你道了早安："新的一天加油"</div><div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">昨天 07:35</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Menu -->
+      <div class="action-group">
+        <div class="action-row" onclick="switchPage('letter-write')">
+          <span class="action-icon-wrap" style="background:rgba(91,127,255,0.12);">✉️</span>
+          写一封睡眠信笺
+          <span class="action-chevron">›</span>
+        </div>
+        <div class="action-row" onclick="switchPage('match')">
+          <span class="action-icon-wrap" style="background:rgba(124,92,252,0.12);">📊</span>
+          查看睡眠匹配度
+          <span class="action-chevron">›</span>
+        </div>
+        <div class="action-row" onclick="switchPage('settings')">
+          <span class="action-icon-wrap" style="background:rgba(255,255,255,0.05);">⚙️</span>
+          隐私与设置
+          <span class="action-chevron">›</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAGE 1: 首页 (Home) ── -->
+    <div class="page" id="page-home">
+      <div class="home-header">
+        <div class="cat-mascot">🐱</div>
+        <div>
+          <div class="greeting-text" id="homeGreeting">晚安，小雅</div>
+          <div class="greeting-sub">今晚想听什么声音？</div>
+        </div>
+      </div>
+
+      <!-- Mini Player -->
+      <div class="mini-player" onclick="showToast('🎵 继续播放 · 雨声')">
+        <div class="mp-wave">
+          <div class="mp-bar"></div><div class="mp-bar"></div><div class="mp-bar"></div><div class="mp-bar"></div>
+        </div>
+        <span class="mp-text">雨声 · 继续播放</span>
+        <span class="mp-btn">▶️</span>
+      </div>
+
+      <!-- White Noise Grid -->
+      <div class="section-label">🎧 助眠白噪音</div>
+      <div class="wn-grid mb-16">
+        <div class="wn-card wn-rain" onclick="showToast('🌧️ 开始播放 · 雨声')">
+          <div class="wn-bg"></div>
+          <span class="wn-icon">🌧️</span>
+          <div class="wn-info">
+            <div class="wn-name">雨声</div>
+            <div class="wn-dur">30 分钟</div>
+          </div>
+        </div>
+        <div class="wn-card wn-ocean" onclick="showToast('🌊 开始播放 · 海浪')">
+          <div class="wn-bg"></div>
+          <span class="wn-icon">🌊</span>
+          <div class="wn-info">
+            <div class="wn-name">海浪</div>
+            <div class="wn-dur">45 分钟</div>
+          </div>
+        </div>
+        <div class="wn-card wn-forest" onclick="showToast('🌿 开始播放 · 森林')">
+          <div class="wn-bg"></div>
+          <span class="wn-icon">🌿</span>
+          <div class="wn-info">
+            <div class="wn-name">森林</div>
+            <div class="wn-dur">60 分钟</div>
+          </div>
+        </div>
+        <div class="wn-card wn-fire" onclick="showToast('🔥 开始播放 · 壁炉')">
+          <div class="wn-bg"></div>
+          <span class="wn-icon">🔥</span>
+          <div class="wn-info">
+            <div class="wn-name">壁炉</div>
+            <div class="wn-dur">无限制</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Sleep Tools -->
+      <div class="section-label">🛌 快速助眠</div>
+      <div class="action-group mb-16">
+        <div class="action-row" onclick="switchPage('together')">
+          <span class="action-icon-wrap" style="background:rgba(255,215,0,0.1);">🌙</span>
+          进入共眠空间
+          <span class="action-badge">💑</span>
+          <span class="action-chevron">›</span>
+        </div>
+        <div class="action-row" onclick="showToast('🧘 开始冥想 · 5分钟')">
+          <span class="action-icon-wrap" style="background:rgba(78,203,113,0.12);">🧘</span>
+          睡前冥想
+          <span class="action-badge">5 min</span>
+          <span class="action-chevron">›</span>
+        </div>
+        <div class="action-row" onclick="showToast('📖 播放睡前故事')">
+          <span class="action-icon-wrap" style="background:rgba(255,154,118,0.12);">📖</span>
+          睡前故事
+          <span class="action-chevron">›</span>
+        </div>
+      </div>
+
+      <!-- AI Recommendation -->
+      <div class="card card-glass mb-16" style="background:linear-gradient(135deg,rgba(91,127,255,0.08),rgba(124,92,252,0.06));">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:32px;">🤖</span>
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:600;color:var(--text-primary);">深睡 AI 推荐</div>
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:2px;">根据你的睡眠数据，今晚试试「雨声 + 冥想」组合</div>
+          </div>
+          <span style="color:var(--blue-light);font-size:13px;">试试 ›</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAGE 2: 信笺箱 (Letters) ── -->
+    <div class="page" id="page-letters">
+      <div class="nav-title-lg mb-16">💌 睡眠信笺</div>
+
+      <!-- Segmented Control -->
+      <div class="segmented">
+        <button class="segmented-option active" onclick="segmentSwitch(this,'letters-inbox')">收件箱</button>
+        <button class="segmented-option" onclick="segmentSwitch(this,'letters-sent')">已发送</button>
+      </div>
+
+      <div id="letters-inbox">
+        <div class="letter-cell unread" onclick="openEnvelopeFromInbox()">
+          <span class="l-env">💌</span>
+          <div class="l-info">
+            <div class="l-from">小鹿 🦌</div>
+            <div class="l-preview">今天看到晚霞很美，想你也在身边。晚安~ 💙</div>
+          </div>
+          <span class="l-time">昨晚 23:05</span>
+          <span class="l-badge"></span>
+        </div>
+        <div class="letter-cell" onclick="openEnvelopeFromInbox()">
+          <span class="l-env">✉️</span>
+          <div class="l-info">
+            <div class="l-from">小鹿 🦌</div>
+            <div class="l-preview">明天面试加油！我会在梦里给你打气的</div>
+          </div>
+          <span class="l-time">3天前</span>
+        </div>
+        <div class="letter-cell" onclick="openEnvelopeFromInbox()">
+          <span class="l-env">💝</span>
+          <div class="l-info">
+            <div class="l-from">小鹿 🦌</div>
+            <div class="l-preview">听到这首歌想起你了，附在信里，晚安</div>
+          </div>
+          <span class="l-time">1周前</span>
+        </div>
+        <div class="letter-cell" onclick="openEnvelopeFromInbox()">
+          <span class="l-env">📮</span>
+          <div class="l-info">
+            <div class="l-from">小鹿 🦌</div>
+            <div class="l-preview">这是我们在一起的第500天。虽然异地，但每晚我们...</div>
+          </div>
+          <span class="l-time">2周前</span>
+        </div>
+      </div>
+
+      <div id="letters-sent" style="display:none;">
+        <div class="letter-cell">
+          <span class="l-env">💌</span>
+          <div class="l-info">
+            <div class="l-from">发给 小鹿 🦌</div>
+            <div class="l-preview">收到你的信了。好温暖。想你。</div>
+          </div>
+          <span class="l-time">昨晚 23:28</span>
+        </div>
+        <div class="letter-cell">
+          <span class="l-env">✉️</span>
+          <div class="l-info">
+            <div class="l-from">发给 小鹿 🦌</div>
+            <div class="l-preview">加完班了，想到你就不累了。晚安宝贝~</div>
+          </div>
+          <span class="l-time">3天前</span>
+        </div>
+      </div>
+
+      <button class="btn btn-primary mt-20" onclick="switchPage('letter-write')">✉️ 写一封新信笺</button>
+    </div>
+
+    <!-- ── PAGE 3: 我的 (Profile / Settings) ── -->
+    <div class="page" id="page-settings">
+      <div class="nav-title-lg mb-16">⚙️ 隐私与设置</div>
+
+      <!-- Privacy Level -->
+      <div class="settings-section">
+        <div class="settings-section-title">数据共享 · 对TA可见</div>
+        <div class="card">
+          <div class="privacy-levels" id="privacyLevels">
+            <div class="privacy-lvl" onclick="setPrivacyLevel(1, this)">
+              <span class="lvl-icon">🌑</span>仅状态
+            </div>
+            <div class="privacy-lvl" onclick="setPrivacyLevel(2, this)">
+              <span class="lvl-icon">🌒</span>基础
+            </div>
+            <div class="privacy-lvl active" onclick="setPrivacyLevel(3, this)">
+              <span class="lvl-icon">🌓</span>标准
+            </div>
+            <div class="privacy-lvl" onclick="setPrivacyLevel(4, this)">
+              <span class="lvl-icon">🌔</span>详细
+            </div>
+            <div class="privacy-lvl" onclick="setPrivacyLevel(5, this)">
+              <span class="lvl-icon">🌕</span>完全
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--text-tertiary);text-align:center;margin-top:10px;" id="privacyDesc">
+            TA 可查看：状态 + 时长 + 评分 + 睡眠阶段
+          </div>
+        </div>
+      </div>
+
+      <!-- Toggle Settings -->
+      <div class="settings-section">
+        <div class="settings-section-title">通知</div>
+        <div class="action-group">
+          <div class="setting-row">
+            <span class="setting-label">TA 入睡通知</span>
+            <div class="ios-toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">TA 醒来通知</span>
+            <div class="ios-toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">共眠提醒</span>
+            <div class="ios-toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="setting-row">
+            <span class="setting-label">AI 睡眠情书推送</span>
+            <div class="ios-toggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Other Settings -->
+      <div class="settings-section">
+        <div class="settings-section-title">其他</div>
+        <div class="action-group">
+          <div class="setting-row" onclick="showToast('📱 勿扰时段设置')">
+            <span class="setting-label">勿扰时段</span>
+            <span class="setting-value">23:00 – 07:00</span>
+            <span class="setting-chevron">›</span>
+          </div>
+          <div class="setting-row" onclick="switchPage('invite')">
+            <span class="setting-label">情侣绑定管理</span>
+            <span class="setting-value">小鹿 🦌</span>
+            <span class="setting-chevron">›</span>
+          </div>
+          <div class="setting-row" onclick="showToast('📤 数据导出中...')">
+            <span class="setting-label">导出睡眠数据</span>
+            <span class="setting-chevron">›</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Danger Zone -->
+      <div class="settings-section">
+        <div class="settings-section-title"></div>
+        <button class="btn btn-warm" onclick="showToast('⚠️ 解绑需双方确认 · 7天冷却期')" style="width:100%;">
+          💔 解除情侣绑定
+        </button>
+      </div>
+    </div>
+
+    <!-- ── PAGE: Invite / Bind ── -->
+    <div class="page" id="page-invite">
+      <div style="text-align:center;padding:20px 0;">
+        <div style="font-size:72px;animation: cat-breathe 3s ease-in-out infinite;">🌙💫🌙</div>
+        <div style="font-size:24px;font-weight:700;color:var(--text-primary);margin-top:12px;">邀请TA一起共眠</div>
+        <div style="font-size:14px;color:var(--text-secondary);margin-top:6px;line-height:1.6;">
+          绑定后可以感知彼此的睡眠状态<br>在同一个月亮下入眠
+        </div>
+      </div>
+
+      <div class="card mb-16">
+        <div style="font-size:13px;color:var(--text-secondary);text-align:center;margin-bottom:12px;">你的专属邀请码</div>
+        <div class="code-display">
+          <div class="code-digit-display">8</div>
+          <div class="code-digit-display">3</div>
+          <div class="code-digit-display">2</div>
+          <div class="code-digit-display">9</div>
+          <div class="code-digit-display">1</div>
+          <div class="code-digit-display">7</div>
+        </div>
+        <div style="font-size:11px;color:var(--text-tertiary);text-align:center;margin-bottom:14px;">24 小时内有效 · 仅可使用一次</div>
+        <button class="btn btn-secondary mb-8" onclick="copyInviteCode()">📋 复制邀请码</button>
+        <button class="btn btn-primary" onclick="showToast('💬 已打开微信分享')">💬 微信分享邀请</button>
+      </div>
+
+      <div class="card">
+        <div style="font-size:13px;color:var(--text-secondary);text-align:center;margin-bottom:14px;">输入TA的邀请码</div>
+        <div class="code-input-group">
+          <input class="code-input-digit" maxlength="1" oninput="handleCodeInput(event)" id="ci1">
+          <input class="code-input-digit" maxlength="1" oninput="handleCodeInput(event)" id="ci2">
+          <input class="code-input-digit" maxlength="1" oninput="handleCodeInput(event)" id="ci3">
+          <input class="code-input-digit" maxlength="1" oninput="handleCodeInput(event)" id="ci4">
+          <input class="code-input-digit" maxlength="1" oninput="handleCodeInput(event)" id="ci5">
+          <input class="code-input-digit" maxlength="1" oninput="handleCodeInput(event)" id="ci6">
+        </div>
+        <button class="btn btn-primary" onclick="acceptBind()">💙 确认绑定</button>
+      </div>
+    </div>
+
+    <!-- ── PAGE: Write Letter ── -->
+    <div class="page" id="page-letter-write">
+      <div class="card mb-16">
+        <div style="font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:12px;">✉️ 写给 TA</div>
+        <textarea class="sheet-input" placeholder="想对TA说什么呢？&#10;比如：今天看到晚霞很美，想你也在身边。晚安~" style="height:130px;resize:none;line-height:1.6;" id="letterContentInput"></textarea>
+
+        <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:8px;">送达时机</div>
+        <div class="flex-col gap-8" id="deliveryOptions">
+          <div class="delivery-option-card selected" data-delivery="on_sleep" onclick="selectDelivery(this)"
+               style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg-card);border-radius:var(--radius-md);border:1.5px solid transparent;cursor:pointer;transition:all 0.2s;">
+            <div class="delivery-radio-dot" style="width:18px;height:18px;border-radius:50%;border:2px solid var(--text-tertiary);display:flex;align-items:center;justify-content:center;"></div>
+            <div><div style="font-weight:500;color:var(--text-primary);">🌙 对方入睡时送达</div><div style="font-size:11px;color:var(--text-tertiary);">TA放下手机入睡的那一刻</div></div>
+          </div>
+          <div class="delivery-option-card" data-delivery="instant" onclick="selectDelivery(this)"
+               style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg-card);border-radius:var(--radius-md);border:1.5px solid transparent;cursor:pointer;transition:all 0.2s;">
+            <div class="delivery-radio-dot" style="width:18px;height:18px;border-radius:50%;border:2px solid var(--text-tertiary);display:flex;align-items:center;justify-content:center;"></div>
+            <div><div style="font-weight:500;color:var(--text-primary);">💌 立即送达</div><div style="font-size:11px;color:var(--text-tertiary);">TA打开小睡眠时即可看到</div></div>
+          </div>
+          <div class="delivery-option-card" data-delivery="on_wake" onclick="selectDelivery(this)"
+               style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg-card);border-radius:var(--radius-md);border:1.5px solid transparent;cursor:pointer;transition:all 0.2s;">
+            <div class="delivery-radio-dot" style="width:18px;height:18px;border-radius:50%;border:2px solid var(--text-tertiary);display:flex;align-items:center;justify-content:center;"></div>
+            <div><div style="font-weight:500;color:var(--text-primary);">☀️ 对方醒来时送达</div><div style="font-size:11px;color:var(--text-tertiary);">TA早上醒来第一眼看到</div></div>
+          </div>
+          <div class="delivery-option-card" data-delivery="scheduled" onclick="selectDelivery(this)"
+               style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg-card);border-radius:var(--radius-md);border:1.5px solid transparent;cursor:pointer;transition:all 0.2s;">
+            <div class="delivery-radio-dot" style="width:18px;height:18px;border-radius:50%;border:2px solid var(--text-tertiary);display:flex;align-items:center;justify-content:center;"></div>
+            <div><div style="font-weight:500;color:var(--text-primary);">⏰ 明晚睡前送达</div><div style="font-size:11px;color:var(--text-tertiary);">预约明天晚上的温暖</div></div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary mt-16" onclick="sendLetter()">💌 封笺发送</button>
+      </div>
+    </div>
+
+    <!-- ── PAGE: Match Report ── -->
+    <div class="page" id="page-match">
+      <div class="card" style="text-align:center;">
+        <div class="section-label">你们的睡眠匹配度</div>
+        <div class="match-ring">
+          <div class="match-ring-inner">
+            <span class="match-number">87</span>
+            <span class="match-unit">%</span>
+            <span style="font-size:12px;color:var(--text-secondary);">同步率很高</span>
+          </div>
+        </div>
+        <div class="flex-col gap-8 mb-16">
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg-card);border-radius:var(--radius-sm);">
+            <span>💚</span><span style="flex:1;font-size:13px;color:var(--text-primary);">入睡时间差</span><span style="font-weight:600;color:#4CAF50;">仅 12 分钟</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg-card);border-radius:var(--radius-sm);">
+            <span>💚</span><span style="flex:1;font-size:13px;color:var(--text-primary);">作息规律度</span><span style="font-weight:600;color:#4CAF50;">都很规律</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--bg-card);border-radius:var(--radius-sm);">
+            <span>💛</span><span style="flex:1;font-size:13px;color:var(--text-primary);">深睡时长差</span><span style="font-weight:600;color:#FFB347;">TA 偏少 23%</span>
+          </div>
+        </div>
+        <div style="padding:14px;background:rgba(91,127,255,0.06);border-radius:var(--radius-sm);font-size:12px;color:var(--text-secondary);line-height:1.6;">
+          💡 <b style="color:var(--text-primary);">深睡 AI 建议：</b>TA 的深睡时长偏少，也许睡前一起冥想 5 分钟能帮助 TA 睡得更好~
+        </div>
+      </div>
+      <button class="btn btn-secondary mt-16" onclick="switchPage('together')">← 返回共眠空间</button>
+    </div>
+
+    <!-- ── PAGE: Envelope Reading ── -->
+    <div class="page" id="page-envelope">
+      <div class="card" style="text-align:center;padding:36px 20px;">
+        <div style="font-size:72px;animation: cat-breathe 2s ease-in-out infinite;">💌</div>
+        <div style="font-size:17px;font-weight:600;color:var(--text-primary);margin-top:20px;line-height:1.6;" id="envelopeBodyText">
+          今天看到晚霞很美<br>想你也在身边<br>晚安~ 💙
+        </div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-top:14px;" id="envelopeFromText">
+          —— 来自小鹿 🦌 · 昨晚 23:05
+        </div>
+        <div class="flex-col gap-8 mt-20">
+          <button class="btn btn-primary" onclick="switchPage('letter-write');document.getElementById('letterContentInput').value='收到你的信了，好温暖 💙\n';">💌 回复这封信</button>
+          <button class="btn btn-secondary" onclick="switchPage('together')">返回共眠空间</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- ============================================================
+       iOS Tab Bar
+       ============================================================ -->
+  <div class="tab-bar">
+    <button class="tab-item" onclick="switchTab('home', this)">
+      <span class="tab-icon-wrap">🏠</span>首页
+    </button>
+    <button class="tab-item active" onclick="switchTab('together', this)">
+      <span class="tab-icon-wrap">🌙</span>共眠
+    </button>
+    <button class="tab-item" onclick="switchTab('letters', this)">
+      <span class="tab-icon-wrap">💌</span>信笺
+    </button>
+    <button class="tab-item" onclick="switchTab('settings', this)">
+      <span class="tab-icon-wrap">👤</span>我的
+    </button>
+  </div>
+
+  <!-- ============================================================
+       iOS Sheet: Goodnight
+       ============================================================ -->
+  <div class="sheet-overlay" id="sheet-goodnight" onclick="if(event.target===this)closeSheet('goodnight')">
+    <div class="sheet-panel">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">💤 给TA道一声晚安</div>
+      <div class="emoji-grid" id="goodnightEmojiGrid">
+        <button class="emoji-option selected" onclick="pickEmoji(this,'goodnightEmojiGrid')">🌙</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodnightEmojiGrid')">💤</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodnightEmojiGrid')">💙</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodnightEmojiGrid')">🤗</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodnightEmojiGrid')">😴</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodnightEmojiGrid')">⭐</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodnightEmojiGrid')">🫂</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodnightEmojiGrid')">💫</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodnightEmojiGrid')">🌠</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodnightEmojiGrid')">🐑</button>
+      </div>
+      <input class="sheet-input" placeholder="想说点什么？（最多50字）" maxlength="50" id="goodnightMsgInput">
+      <button class="btn btn-primary" onclick="sendGoodnight()">💤 发送晚安</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       iOS Sheet: Goodmorning
+       ============================================================ -->
+  <div class="sheet-overlay" id="sheet-goodmorning" onclick="if(event.target===this)closeSheet('goodmorning')">
+    <div class="sheet-panel">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">☀️ 给TA道一声早安</div>
+      <div class="emoji-grid" id="goodmorningEmojiGrid">
+        <button class="emoji-option selected" onclick="pickEmoji(this,'goodmorningEmojiGrid')">☀️</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodmorningEmojiGrid')">🌅</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodmorningEmojiGrid')">💪</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodmorningEmojiGrid')">💛</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodmorningEmojiGrid')">🌸</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodmorningEmojiGrid')">☕</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodmorningEmojiGrid')">🌈</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodmorningEmojiGrid')">✨</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodmorningEmojiGrid')">🫶</button>
+        <button class="emoji-option" onclick="pickEmoji(this,'goodmorningEmojiGrid')">🎈</button>
+      </div>
+      <input class="sheet-input" placeholder="新的一天，想说什么？（最多50字）" maxlength="50" id="goodmorningMsgInput">
+      <button class="btn btn-primary" onclick="sendGoodmorning()">☀️ 发送早安</button>
+    </div>
+  </div>
+
+  <!-- Envelope Arrival Overlay -->
+  <div class="sheet-overlay" id="envelopeArrivalOverlay" style="align-items:center;">
+    <div style="text-align:center;animation: pageFadeIn 0.6s var(--ease-out-expo);">
+      <div style="font-size:80px;animation: cat-breathe 1.5s ease-in-out infinite;">💌</div>
+      <div style="font-size:18px;font-weight:600;color:var(--text-primary);margin-top:16px;">你收到了一封睡眠信笺</div>
+      <div style="font-size:14px;color:var(--text-secondary);margin-top:6px;">来自 小鹿 🦌</div>
+      <button class="btn btn-gold mt-20" style="width:auto;padding:14px 40px;" onclick="openEnvelope()">✨ 拆开看看</button>
+    </div>
+  </div>
+
+</div><!-- /phone-frame -->
+
+<script>
+// ============================================================
+// Global State
+// ============================================================
+const S = {
+  partner: { status: 'online', name: '小鹿', emoji: '🦌' },
+  self:   { status: 'online' },
+  coSleepDays: 186,
+  currentPage: 'together',
+  currentTab: 'together',
+  starsGenerated: false,
+};
+
+// ============================================================
+// Page & Tab Navigation
+// ============================================================
+function switchPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const el = document.getElementById('page-' + pageId);
+  if (el) { el.classList.add('active'); }
+  document.getElementById('contentArea').scrollTop = 0;
+  S.currentPage = pageId;
+
+  // Update tab bar
+  const tabMap = { home: 0, together: 1, letters: 2, settings: 3, invite: -1, 'letter-write': -1, match: -1, envelope: -1 };
+  const tabIdx = tabMap[pageId];
+  const tabs = document.querySelectorAll('.tab-item');
+  if (tabIdx >= 0) {
+    tabs.forEach((t, i) => t.classList.toggle('active', i === tabIdx));
+    S.currentTab = pageId;
+  }
+
+  // Lazy generate stars for together page
+  if (pageId === 'together' && !S.starsGenerated) {
+    generateStars();
+    S.starsGenerated = true;
+  }
+
+  updateNavForPage(pageId);
+}
+
+function switchTab(pageId, btn) {
+  switchPage(pageId);
+  document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  S.currentTab = pageId;
+}
+
+function updateNavForPage(pageId) {
+  const timeEl = document.getElementById('statusTime');
+  const island = document.getElementById('dynamicIsland');
+  if (pageId === 'together') {
+    island.classList.remove('expanded');
+    updateStatusBarTime();
+  } else if (pageId === 'home') {
+    island.classList.remove('expanded');
+  }
+}
+
+function updateStatusBarTime() {
+  const now = new Date();
+  const h = now.getHours().toString().padStart(2,'0');
+  const m = now.getMinutes().toString().padStart(2,'0');
+  document.getElementById('statusTime').textContent = h + ':' + m;
+}
+
+// ============================================================
+// Moon Sync Rendering
+// ============================================================
+function updateMoonSync() {
+  const pMoon = document.getElementById('moonPartner');
+  const sMoon = document.getElementById('moonSelf');
+  const pIcon = document.getElementById('moonPartnerIcon');
+  const sIcon = document.getElementById('moonSelfIcon');
+  const pBadge = document.getElementById('partnerStatusBadge');
+  const sBadge = document.getElementById('selfStatusBadge');
+  const skyBg = document.getElementById('skyBg');
+  const greeting = document.getElementById('timeGreeting');
+  const badge = document.getElementById('coSleepBadge');
+  const island = document.getElementById('dynamicIsland');
+
+  // --- Partner ---
+  pMoon.className = 'moon-orb';
+  const statusMap = {
+    online:  ['crescent', '🌙', '还在线'],
+    sleep:   ['full',     '🌕', '已入睡'],
+    wake:    ['sunrise',  '☀️', '已醒来'],
+    offline: ['clouded',  '☁️', '离线中'],
+  };
+  const [pClass, pIconText, pBadgeText] = statusMap[S.partner.status];
+  pMoon.classList.add(pClass);
+  pIcon.textContent = pIconText;
+  pBadge.textContent = pBadgeText;
+
+  // --- Self ---
+  sMoon.className = 'moon-orb';
+  const selfMap = {
+    online: ['crescent', '🌙', '还在线'],
+    sleep:  ['full',     '🌕', '已入睡'],
+    wake:   ['sunrise',  '☀️', '已醒来'],
+  };
+  const [sClass, sIconText, sBadgeText] = selfMap[S.self.status];
+  sMoon.classList.add(sClass);
+  sIcon.textContent = sIconText;
+  sBadge.textContent = sBadgeText;
+
+  // --- Sky & Greeting ---
+  skyBg.className = 'sky-bg';
+  if (S.partner.status === 'sleep' && S.self.status === 'sleep') {
+    skyBg.classList.add('state-both-sleep');
+    greeting.textContent = '一起睡了 · 💤';
+    badge.innerHTML = '💤 今晚你们一起睡了 · 共眠 ' + S.coSleepDays + ' 天';
+    island.classList.add('expanded');
+  } else if (S.partner.status === 'sleep') {
+    skyBg.classList.add('state-partner-sleep');
+    greeting.textContent = 'TA已经睡了 · 🌙';
+    badge.innerHTML = '✨ 共眠 ' + S.coSleepDays + ' 天';
+    island.classList.remove('expanded');
+  } else if (S.partner.status === 'wake' || S.self.status === 'wake') {
+    skyBg.classList.add('state-morning');
+    greeting.textContent = '新的一天开始了 · ☀️';
+    badge.innerHTML = '✨ 共眠 ' + S.coSleepDays + ' 天';
+    island.classList.remove('expanded');
+  } else if (S.partner.status === 'offline') {
+    skyBg.classList.add('state-online');
+    greeting.textContent = 'TA 离开了 · ☁️';
+    badge.innerHTML = '✨ 共眠 ' + S.coSleepDays + ' 天';
+    island.classList.remove('expanded');
+  } else {
+    skyBg.classList.add('state-online');
+    greeting.textContent = '夜深了 · 22:47';
+    badge.innerHTML = '✨ 共眠 ' + S.coSleepDays + ' 天';
+    island.classList.remove('expanded');
+  }
+
+  // Update home greeting too
+  const hg = document.getElementById('homeGreeting');
+  if (S.partner.status === 'sleep' && S.self.status === 'sleep') hg.textContent = '一起睡了，好梦';
+  else if (S.partner.status === 'sleep') hg.textContent = 'TA已经睡了';
+  else if (S.partner.status === 'wake') hg.textContent = '早安，小雅';
+  else hg.textContent = '晚安，小雅';
+}
+
+// ============================================================
+// Stars Generation
+// ============================================================
+function generateStars() {
+  const container = document.getElementById('starsLayer');
+  if (!container) return;
+  container.innerHTML = '';
+  for (let i = 0; i < 50; i++) {
+    const star = document.createElement('div');
+    star.className = 'star-particle';
+    const size = 0.8 + Math.random() * 2.5;
+    star.style.cssText = `
+      left: ${Math.random() * 100}%;
+      top: ${Math.random() * 100}%;
+      width: ${size}px; height: ${size}px;
+      --twinkle-dur: ${1.5 + Math.random() * 3.5}s;
+      --twinkle-delay: ${Math.random() * 4}s;
+    `;
+    container.appendChild(star);
+  }
+}
+
+// ============================================================
+// Sheets (iOS-style modals)
+// ============================================================
+function openSheet(name) {
+  document.getElementById('sheet-' + name).classList.add('show');
+}
+function closeSheet(name) {
+  document.getElementById('sheet-' + name).classList.remove('show');
+}
+
+function pickEmoji(btn, gridId) {
+  document.querySelectorAll('#' + gridId + ' .emoji-option').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+function sendGoodnight() {
+  const msg = document.getElementById('goodnightMsgInput').value || '晚安';
+  const emoji = document.querySelector('#goodnightEmojiGrid .emoji-option.selected')?.textContent || '🌙';
+  closeSheet('goodnight');
+  showToast(emoji + ' 晚安已发送给 ' + S.partner.name);
+  addTimelineItem('💤', emoji + ' 你向' + S.partner.name + '道了晚安：' + msg);
+  document.getElementById('goodnightMsgInput').value = '';
+  burstHearts();
+}
+
+function sendGoodmorning() {
+  const msg = document.getElementById('goodmorningMsgInput').value || '早安';
+  const emoji = document.querySelector('#goodmorningEmojiGrid .emoji-option.selected')?.textContent || '☀️';
+  closeSheet('goodmorning');
+  showToast(emoji + ' 早安已发送给 ' + S.partner.name);
+  addTimelineItem('☀️', emoji + ' 你向' + S.partner.name + '道了早安：' + msg);
+  document.getElementById('goodmorningMsgInput').value = '';
+  burstHearts();
+}
+
+// ============================================================
+// Toast
+// ============================================================
+let toastTimer;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+// ============================================================
+// Notification
+// ============================================================
+function showNotif(icon, title, desc) {
+  document.getElementById('notifIcon').textContent = icon;
+  document.getElementById('notifTitle').textContent = title;
+  document.getElementById('notifDesc').textContent = desc;
+  document.getElementById('notifBanner').classList.add('show');
+  setTimeout(hideNotif, 5000);
+}
+function hideNotif() {
+  document.getElementById('notifBanner').classList.remove('show');
+}
+
+// ============================================================
+// Timeline
+// ============================================================
+function addTimelineItem(icon, text) {
+  const list = document.getElementById('timelineList');
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;gap:12px;padding:12px 0;border-bottom:0.5px solid var(--separator);align-items:center;animation:pageFadeIn 0.4s ease-out;';
+  div.innerHTML = `<span style="font-size:24px;">${icon}</span><div style="flex:1;"><div style="font-size:13px;color:var(--text-primary);">${text}</div><div style="font-size:11px;color:var(--text-tertiary);margin-top:2px;">刚刚</div></div>`;
+  list.insertBefore(div, list.firstChild);
+}
+
+// ============================================================
+// Heart Burst
+// ============================================================
+function burstHearts() {
+  const box = document.getElementById('moonSyncBox');
+  if (!box) return;
+  const rect = box.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const hearts = ['💙', '💛', '💜', '💚', '✨', '💫', '🩵', '🩷'];
+  for (let i = 0; i < 10; i++) {
+    const h = document.createElement('span');
+    h.className = 'heart-particle';
+    h.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+    h.style.cssText = `
+      position: fixed; left: ${cx}px; top: ${cy}px;
+      font-size: ${16 + Math.random() * 16}px;
+      --hx: ${(Math.random() - 0.5) * 160}px;
+      --hy: ${-60 - Math.random() * 120}px;
+      z-index: 400; pointer-events: none;
+    `;
+    h.style.animation = `heart-float ${0.8 + Math.random() * 0.8}s ease-out forwards`;
+    h.style.animationDelay = Math.random() * 0.2 + 's';
+    document.body.appendChild(h);
+    setTimeout(() => h.remove(), 1800);
+  }
+}
+
+// ============================================================
+// Partner moon tap → heartbeat
+// ============================================================
+function onTapPartnerMoon() {
+  if (S.partner.status === 'offline') {
+    showToast('☁️ TA 当前离线，心意已保存');
+    return;
+  }
+  showToast('💓 向 ' + S.partner.name + ' 发送了心跳');
+  burstHearts();
+  addTimelineItem('💓', '你向 ' + S.partner.name + ' 发送了心跳');
+}
+
+// ============================================================
+// Letters
+// ============================================================
+function selectDelivery(el) {
+  document.querySelectorAll('#deliveryOptions .delivery-option-card').forEach(c => {
+    c.classList.remove('selected');
+    c.style.borderColor = 'transparent';
+    c.style.background = 'var(--bg-card)';
+    const dot = c.querySelector('.delivery-radio-dot');
+    if (dot) { dot.style.borderColor = 'var(--text-tertiary)'; dot.style.background = 'transparent'; dot.textContent = ''; }
+  });
+  el.classList.add('selected');
+  el.style.borderColor = 'var(--blue-light)';
+  el.style.background = 'rgba(91,127,255,0.08)';
+  const dot = el.querySelector('.delivery-radio-dot');
+  if (dot) {
+    dot.style.borderColor = 'var(--blue-light)';
+    dot.style.background = 'var(--blue-light)';
+    dot.innerHTML = '<span style="color:#fff;font-size:10px;font-weight:700;">✓</span>';
+  }
+}
+
+function sendLetter() {
+  const content = document.getElementById('letterContentInput').value.trim();
+  if (!content) { showToast('请写点什么吧 💌'); return; }
+  const selected = document.querySelector('#deliveryOptions .delivery-option-card.selected');
+  const delivery = selected?.dataset?.delivery || 'instant';
+  const labels = { instant: '立即送达', on_sleep: 'TA入睡时送达', on_wake: 'TA醒来时送达', scheduled: '明晚睡前送达' };
+  showToast('💌 信笺已封好 · ' + (labels[delivery] || ''));
+  document.getElementById('letterContentInput').value = '';
+  setTimeout(() => switchPage('together'), 500);
+  addTimelineItem('💌', '你给 ' + S.partner.name + ' 写了一封睡眠信笺');
+}
+
+function openEnvelopeFromInbox() {
+  switchPage('envelope');
+}
+
+function openEnvelope() {
+  document.getElementById('envelopeArrivalOverlay').classList.remove('show');
+  switchPage('envelope');
+}
+
+// ============================================================
+// Invite
+// ============================================================
+function handleCodeInput(e) {
+  const val = e.target.value.replace(/[^0-9]/g, '');
+  e.target.value = val;
+  if (val && e.target.nextElementSibling?.classList.contains('code-input-digit')) {
+    e.target.nextElementSibling.focus();
+  }
+}
+
+function copyInviteCode() {
+  navigator.clipboard?.writeText('832917');
+  showToast('📋 邀请码已复制：832917');
+}
+
+function acceptBind() {
+  const inputs = document.querySelectorAll('.code-input-digit');
+  const code = Array.from(inputs).map(i => i.value).join('');
+  if (code.length < 6) { showToast('请输入完整的 6 位邀请码'); return; }
+  showToast('💙 绑定成功！欢迎来到共眠空间');
+  S.partner.name = '小鹿';
+  S.partner.emoji = '🦌';
+  document.getElementById('moonPartnerName').textContent = '小鹿 🦌';
+  setTimeout(() => { switchPage('together'); updateMoonSync(); }, 800);
+}
+
+// ============================================================
+// Privacy Levels
+// ============================================================
+function setPrivacyLevel(level, el) {
+  document.querySelectorAll('#privacyLevels .privacy-lvl').forEach(l => l.classList.remove('active'));
+  el.classList.add('active');
+  const descs = {
+    1: 'TA 仅可查看：在线 / 入睡 / 醒来状态',
+    2: 'TA 可查看：状态 + 睡眠时长 + 评分',
+    3: 'TA 可查看：状态 + 时长 + 评分 + 睡眠阶段',
+    4: 'TA 可查看：状态 + 时长 + 评分 + 阶段 + 鼾声/梦话',
+    5: 'TA 可查看：全部数据（含录音）',
+  };
+  document.getElementById('privacyDesc').textContent = descs[level];
+}
+
+// ============================================================
+// Segmented Control (Letters)
+// ============================================================
+function segmentSwitch(btn, tab) {
+  btn.parentElement.querySelectorAll('.segmented-option').forEach(o => o.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('letters-inbox').style.display = tab === 'letters-inbox' ? 'block' : 'none';
+  document.getElementById('letters-sent').style.display = tab === 'letters-sent' ? 'block' : 'none';
+}
+
+// ============================================================
+// Demo State Panel
+// ============================================================
+function toggleStateMenu() {
+  document.getElementById('stateMenu').classList.toggle('show');
+}
+
+function setDemoState(scenario) {
+  document.getElementById('stateMenu').classList.remove('show');
+  switch (scenario) {
+    case 'both_online':
+      S.partner.status = 'online'; S.self.status = 'online';
+      updateMoonSync();
+      showToast('🎬 场景：双方在线 · 睡前');
+      break;
+    case 'partner_sleep':
+      S.partner.status = 'sleep'; S.self.status = 'online';
+      updateMoonSync();
+      showNotif('🌙', 'TA 已入睡', '你的' + S.partner.name + '已经进入梦乡了 💤');
+      showToast('🎬 场景：TA 已入睡');
+      break;
+    case 'both_sleep':
+      S.partner.status = 'sleep'; S.self.status = 'sleep';
+      updateMoonSync();
+      showToast('🎬 场景：双方共眠中 💤');
+      break;
+    case 'partner_wake':
+      S.partner.status = 'wake'; S.self.status = 'wake';
+      updateMoonSync();
+      showNotif('☀️', 'TA 醒来了', S.partner.name + '开始新的一天了！');
+      showToast('🎬 场景：早安 · TA 已醒来');
+      break;
+    case 'partner_offline':
+      S.partner.status = 'offline'; S.self.status = 'online';
+      updateMoonSync();
+      showToast('🎬 场景：TA 离线');
+      break;
+    case 'show_notif':
+      S.partner.status = 'sleep'; S.self.status = 'online';
+      updateMoonSync();
+      showNotif('🌙', 'TA 已入睡', '你的' + S.partner.name + '已经进入梦乡了 💤');
+      break;
+    case 'show_envelope':
+      S.partner.status = 'sleep'; S.self.status = 'online';
+      updateMoonSync();
+      document.getElementById('envelopeArrivalOverlay').classList.add('show');
+      break;
+  }
+  // Ensure on together page
+  if (S.currentPage !== 'together' && scenario !== 'show_envelope') {
+    switchPage('together');
+  }
+}
+
+// Close state menu on outside click
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#stateFab') && !e.target.closest('#stateMenu')) {
+    document.getElementById('stateMenu').classList.remove('show');
+  }
+});
+
+// ============================================================
+// Init
+// ============================================================
+function init() {
+  updateStatusBarTime();
+  updateMoonSync();
+
+  // Initial delivery option styling
+  const initialDelivery = document.querySelector('#deliveryOptions .delivery-option-card.selected');
+  if (initialDelivery) {
+    initialDelivery.style.borderColor = 'var(--blue-light)';
+    initialDelivery.style.background = 'rgba(91,127,255,0.08)';
+    const dot = initialDelivery.querySelector('.delivery-radio-dot');
+    if (dot) {
+      dot.style.borderColor = 'var(--blue-light)';
+      dot.style.background = 'var(--blue-light)';
+      dot.innerHTML = '<span style="color:#fff;font-size:10px;font-weight:700;">✓</span>';
+    }
+  }
+}
+
+init();
+
+console.log('🌙 小睡眠 · 异地情侣睡眠监测 — iOS 交互原型 v2.0');
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+console.log('📱 4 个 Tab：首页 | 共眠 | 信笺 | 我的');
+console.log('🎬 点击右上角按钮切换 7 种演示场景');
+console.log('💡 可交互功能：');
+console.log('  · 💤/☀️ 晚安早安 Sheet（emoji + 文字）');
+console.log('  · ✉️ 睡眠信笺（4 种送达时机）');
+console.log('  · 📊 睡眠匹配度报告（动画圆环）');
+console.log('  · 💑 情侣绑定（6位邀请码）');
+console.log('  · 🎧 白噪音卡片（首页）');
+console.log('  · ⚙️ 5级隐私可见度设置');
+console.log('  · 💓 点击TA月亮发送心跳 + 爱心特效');
+console.log('  · 🌟 星空粒子 + 流星动画');
+console.log('  · 😺 小睡眠猫IP（首页）');
+console.log('  · 🔔 iOS风格推送通知横幅');
+console.log('  · 🏝️ Dynamic Island 状态联动');
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+</script>
+</body>
+</html>
